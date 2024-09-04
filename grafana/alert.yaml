@@ -116,15 +116,6 @@ contactPoints:
           subject: New 500 error occurred
           message: |
             {{ template "500-error-email-template" . }}
-      - uid: 39058c56-5b83-4ff9-aac7-ef3366af7800
-        type: slack
-        disableResolveMessage: true
-        settings:
-          recipient: 500-errors
-          url: https://hooks.slack.com/services/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
-          title: New 500 error occurred
-          text: |
-            {{ template "500-error-slack-template" . }}
 
 # Notification policies
 policies:
@@ -134,19 +125,6 @@ policies:
       - [ "alert-type", "=", "500-ERROR" ]
 
 # Template definitions
-templates:
-  - orgId: 1
-    name: 500-error-slack-template
-    template: |
-      {{ printf "*Total %d alerts:*\n" (len .Alerts) }}
-      {{ range .Alerts }}
-        {{- printf "*Timestamp*: %s\n" (index .Labels "log_timestamp") }}
-        {{- printf "*Level*: %s\n" (index .Labels "log_level") }}
-        {{- .Labels.log_message }}
-        {{- .Labels.log_stack }}
-        {{- printf "<%s?orgId=1&var-timestamp=%s|View Log>\n" .DashboardURL (index .Labels "log_timestamp") }}
-      {{ end }}
-
   - orgId: 1
     name: 500-error-email-template
     template: |

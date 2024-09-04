@@ -1,0 +1,14 @@
+apiVersion: 1
+
+providers:
+  - name: 'Dashboard Provider'
+    orgId: 1
+    folder: 'Alerting'
+    folderUid: ''
+    type: file
+    disableDeletion: true
+    updateIntervalSeconds: 10
+    allowUiUpdates: false
+    options:
+      path: 500-errors-dashboard.json
+      foldersFromFilesStructure: false

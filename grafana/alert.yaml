@@ -1,0 +1,162 @@
+apiVersion: 1
+
+# Alert rules
+groups:
+  - orgId: 1
+    name: 500-error
+    folder: Alerting
+    interval: 60s
+    rules:
+      - uid: a0a743f4-a43c-4848-b27b-4433fbb6b505
+        title: 500-error
+        condition: C
+        data:
+          - refId: A
+            queryType: instant
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: P8E80F9AEF21F6940
+            model:
+              datasource:
+                type: loki
+                uid: P8E80F9AEF21F6940
+              editorMode: code
+              expr: |-
+                rate(
+                  {filename="/var/log/app/app.log"} |= `NullPointerException` | regexp `\>+ (?P<log_timestamp>\S+) \S+ (?P<log_level>\S+) (?P<log_message>.*)\n(?P<log_stack>(.|\n)*)?` 
+                [1m])
+              hide: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              queryType: instant
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: [ ]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    params: [ ]
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              hide: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: last
+              refId: B
+              type: reduce
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: [ ]
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              hide: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        dashboardUid: f563de66-8706-4c70-bdb0-7d160d11e4df
+        panelId: 1
+        noDataState: OK
+        execErrState: OK
+        for: 0s
+        annotations:
+          __dashboardUid__: f563de66-8706-4c70-bdb0-7d160d11e4df
+          __panelId__: "1"
+        labels:
+          alert-type: 500-ERROR
+        isPaused: false
+
+# Contact points
+contactPoints:
+  - orgId: 1
+    name: 500 Error Contacts
+    receivers:
+      - uid: cb8f1cb4-b9d2-4f71-bb65-1a519084357b
+        type: email
+        disableResolveMessage: true
+        settings:
+          addresses: |
+            raihan.dk@gmail.com
+          singleEmail: true
+          subject: New 500 error occurred
+          message: |
+            {{ template "500-error-email-template" . }}
+      - uid: 39058c56-5b83-4ff9-aac7-ef3366af7800
+        type: slack
+        disableResolveMessage: true
+        settings:
+          recipient: 500-errors
+          url: https://hooks.slack.com/services/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
+          title: New 500 error occurred
+          text: |
+            {{ template "500-error-slack-template" . }}
+
+# Notification policies
+policies:
+  - orgId: 1
+    receiver: 500 Error Contacts
+    object_matchers:
+      - [ "alert-type", "=", "500-ERROR" ]
+
+# Template definitions
+templates:
+  - orgId: 1
+    name: 500-error-slack-template
+    template: |
+      {{ printf "*Total %d alerts:*\n" (len .Alerts) }}
+      {{ range .Alerts }}
+        {{- printf "*Timestamp*: %s\n" (index .Labels "log_timestamp") }}
+        {{- printf "*Level*: %s\n" (index .Labels "log_level") }}
+        {{- .Labels.log_message }}
+        {{- .Labels.log_stack }}
+        {{- printf "<%s?orgId=1&var-timestamp=%s|View Log>\n" .DashboardURL (index .Labels "log_timestamp") }}
+      {{ end }}
+
+  - orgId: 1
+    name: 500-error-email-template
+    template: |
+      {{ printf "Total %d alerts:\n" (len .Alerts) }}
+      {{ range .Alerts }}
+        {{- printf "Timestamp: %s\n" (index .Labels "log_timestamp") }}
+        {{- printf "Level: %s\n" (index .Labels "log_level") }}
+        {{- .Labels.log_message }}
+        <pre><code>
+          {{- .Labels.log_stack }}
+        </code></pre>
+        {{- printf "View Log: %s?orgId=1&var-timestamp=%s\n" .DashboardURL (index .Labels "log_timestamp") }}
+      {{- end -}}
